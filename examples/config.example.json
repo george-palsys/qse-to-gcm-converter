@@ -1,0 +1,12 @@
+{
+  "repositoryUrl": "https://github.com/your-organization/your-repository",
+  "applicationId": "your-application-name",
+  "applicationVersion": "1.0.0",
+  "metadata": {
+    "branch": "main",
+    "product": "your-product-name",
+    "ci_pipeline": "jenkins",
+    "cd_pipeline": "argocd",
+    "revision_id": "commit-hash-or-tag"
+  }
+}

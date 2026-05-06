@@ -1,0 +1,4 @@
+Language,Crypto Function,Library,File Path,Line Number,Start Position,End Position
+Java,java.security.MessageDigest.getInstance,JCA,src\main\java\com\example\CryptoUtil.java,25,43,54
+Java,javax.crypto.Cipher.getInstance,JCA,src\main\java\com\example\CryptoUtil.java,45,26,37
+Java,javax.crypto.Cipher.init,JCA,src\main\java\com\example\CryptoUtil.java,48,10,14

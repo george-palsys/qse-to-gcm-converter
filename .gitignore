@@ -1,0 +1,40 @@
+# PowerShell
+*.ps1xml
+*.psd1
+
+# Output files
+output/
+*.json
+!examples/*.json
+!config.example.json
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+~$*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Credentials
+config.json
+.env
+*.key
+*.pem
+
+# QSE CSV files (keep examples)
+*.csv
+!examples/*.csv

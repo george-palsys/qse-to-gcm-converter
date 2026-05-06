@@ -1,0 +1,4 @@
+Language,File Name,File Path,No. of Artifacts,Crypto Artefact Name,Line Number,Start Position,End Position,Artifact,Vulnerabilities,Library,Primitive,Variant,Oid,Digest Size,Asset Type,Crypto Function,is Final,Block Size,Private Key Size,Public Key Size,Mode,Padding
+Jar,example-app.jar,target/dependency/example-app.jar,3,java.security.MessageDigest.getInstance,0,0,0,"java.security.MessageDigest.getInstance","",JCA,"[hash]","[SHA2]","[2.16.840.1.101.3.4.2.1]","[256]","algorithm",,0,0,"0",,,
+Jar,example-app.jar,target/dependency/example-app.jar,3,javax.crypto.Cipher.getInstance,0,0,0,"javax.crypto.Cipher.getInstance","",JCA,"[blockcipher]","[AES]","[2.16.840.1.101.3.4.1.2]","[0]","algorithm",,0,0,"[256]",,"[cbc]",
+Jar,example-app.jar,target/dependency/example-app.jar,3,javax.crypto.Cipher.init,0,0,0,"javax.crypto.Cipher.init","",JCA,,,,"0",,"[encrypt]",0,0,"0",,,
