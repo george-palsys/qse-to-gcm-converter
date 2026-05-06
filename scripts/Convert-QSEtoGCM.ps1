@@ -1,24 +1,24 @@
 <#
 .SYNOPSIS
-    將 IBM QSE CSV 輸出轉換為 GCM 相容的 JSON 格式
+    Convert IBM QSE CSV output to GCM-compatible JSON format
 
 .DESCRIPTION
-    此腳本讀取 QSE 的 CSV 報告(API Discovery 或 Crypto Inventory),
-    並轉換為 IBM Guardium Cryptographic Manager (GCM) 可接受的 JSON 格式。
-    自動補充 GCM 所需的 repositoryUrl, applicationId 等必要欄位。
+    This script reads QSE CSV reports (API Discovery or Crypto Inventory)
+    and converts them to IBM Guardium Cryptographic Manager (GCM) compatible JSON format.
+    Automatically adds required fields like repositoryUrl, applicationId, etc.
 
 .PARAMETER CsvPath
-    QSE CSV 檔案的路徑
+    Path to the QSE CSV file
 
 .PARAMETER ConfigPath
-    包含應用程式資訊的配置檔案路徑 (JSON 格式)
+    Path to the configuration file (JSON format) containing application information
 
 .PARAMETER OutputPath
-    輸出 JSON 檔案的路徑 (預設: output.json)
+    Path for the output JSON file (default: output.json)
 
 .PARAMETER ReportType
-    報告類型: 'api' (API Discovery) 或 'crypto' (Crypto Inventory)
-    如果未指定,將自動偵測
+    Report type: 'api' (API Discovery) or 'crypto' (Crypto Inventory)
+    If not specified, will auto-detect
 
 .EXAMPLE
     .\Convert-QSEtoGCM.ps1 -CsvPath "API discovery results.csv" -ConfigPath "config.json"
@@ -50,36 +50,32 @@ param(
     [string]$ReportType = 'auto'
 )
 
-# 設定錯誤處理
 $ErrorActionPreference = "Stop"
 
-# 載入配置檔案
 function Load-Config {
     param([string]$Path)
     
     try {
         $config = Get-Content -Path $Path -Raw -Encoding UTF8 | ConvertFrom-Json
         
-        # 驗證必要欄位
         if (-not $config.repositoryUrl) {
-            throw "配置檔案缺少必要欄位: repositoryUrl"
+            throw "Config file missing required field: repositoryUrl"
         }
         if (-not $config.applicationId) {
-            throw "配置檔案缺少必要欄位: applicationId"
+            throw "Config file missing required field: applicationId"
         }
         if (-not $config.applicationVersion) {
-            throw "配置檔案缺少必要欄位: applicationVersion"
+            throw "Config file missing required field: applicationVersion"
         }
         
         return $config
     }
     catch {
-        Write-Error "載入配置檔案失敗: $_"
+        Write-Error "Failed to load config file: $_"
         throw
     }
 }
 
-# 偵測報告類型
 function Detect-ReportType {
     param([string]$CsvPath)
     
@@ -92,7 +88,6 @@ function Detect-ReportType {
         return "crypto"
     }
     else {
-        # 讀取第一行來判斷
         $firstLine = Get-Content -Path $CsvPath -First 1
         if ($firstLine -match "Crypto Function") {
             return "crypto"
@@ -103,7 +98,6 @@ function Detect-ReportType {
     }
 }
 
-# 轉換 CSV 為 function calls
 function Convert-CsvToFunctionCalls {
     param(
         [array]$CsvData,
@@ -127,7 +121,6 @@ function Convert-CsvToFunctionCalls {
             }
         }
         
-        # 添加可選欄位
         if ($row.Primitive) {
             $functionCall.cryptoProperties.primitive = $row.Primitive
         }
@@ -168,7 +161,6 @@ function Convert-CsvToFunctionCalls {
     return $functionCalls
 }
 
-# 建立 metadata properties
 function Build-MetadataProperties {
     param($Config)
     
@@ -186,7 +178,6 @@ function Build-MetadataProperties {
     return $properties
 }
 
-# 主要轉換函數
 function Convert-QSEtoGCM {
     param(
         [string]$CsvPath,
@@ -194,18 +185,15 @@ function Convert-QSEtoGCM {
         [string]$Type
     )
     
-    Write-Host "讀取 CSV 檔案: $CsvPath" -ForegroundColor Cyan
+    Write-Host "Reading CSV file: $CsvPath" -ForegroundColor Cyan
     
-    # 讀取 CSV
     $csvData = Import-Csv -Path $CsvPath -Encoding UTF8
     
-    Write-Host "找到 $($csvData.Count) 筆記錄" -ForegroundColor Green
-    Write-Host "轉換為 GCM 格式..." -ForegroundColor Cyan
+    Write-Host "Found $($csvData.Count) records" -ForegroundColor Green
+    Write-Host "Converting to GCM format..." -ForegroundColor Cyan
     
-    # 轉換為 function calls
     $functionCalls = Convert-CsvToFunctionCalls -CsvData $csvData -Type $Type
     
-    # 建立 GCM JSON 結構
     $gcmJson = @{
         findings = @{
             assets = @(
@@ -225,50 +213,43 @@ function Convert-QSEtoGCM {
     return $gcmJson
 }
 
-# 主程式
 try {
     Write-Host "`n=== QSE to GCM Converter ===" -ForegroundColor Yellow
     Write-Host "Version: 1.0.0`n" -ForegroundColor Gray
     
-    # 載入配置
-    Write-Host "載入配置檔案: $ConfigPath" -ForegroundColor Cyan
+    Write-Host "Loading config file: $ConfigPath" -ForegroundColor Cyan
     $config = Load-Config -Path $ConfigPath
-    Write-Host "✓ 配置載入成功" -ForegroundColor Green
+    Write-Host "[OK] Config loaded successfully" -ForegroundColor Green
     Write-Host "  - Repository: $($config.repositoryUrl)" -ForegroundColor Gray
     Write-Host "  - Application: $($config.applicationId) v$($config.applicationVersion)" -ForegroundColor Gray
     
-    # 偵測報告類型
     if ($ReportType -eq 'auto') {
         $ReportType = Detect-ReportType -CsvPath $CsvPath
-        Write-Host "✓ 自動偵測報告類型: $ReportType" -ForegroundColor Green
+        Write-Host "[OK] Auto-detected report type: $ReportType" -ForegroundColor Green
     }
     
-    # 轉換
     $result = Convert-QSEtoGCM -CsvPath $CsvPath -Config $config -Type $ReportType
     
-    # 確保輸出目錄存在
     $outputDir = [System.IO.Path]::GetDirectoryName($OutputPath)
     if ($outputDir -and -not (Test-Path $outputDir)) {
         New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
     }
     
-    # 寫入 JSON
-    Write-Host "`n寫入輸出檔案: $OutputPath" -ForegroundColor Cyan
+    Write-Host "`nWriting output file: $OutputPath" -ForegroundColor Cyan
     $result | ConvertTo-Json -Depth 10 | Set-Content -Path $OutputPath -Encoding UTF8
     
-    Write-Host "✓ 轉換完成!" -ForegroundColor Green
-    Write-Host "`n輸出檔案: $OutputPath" -ForegroundColor Yellow
-    Write-Host "總共轉換: $($result.findings.assets[0].functionCalls.Count) 個加密物件`n" -ForegroundColor Green
+    Write-Host "[OK] Conversion completed!" -ForegroundColor Green
+    Write-Host "`nOutput file: $OutputPath" -ForegroundColor Yellow
+    Write-Host "Total converted: $($result.findings.assets[0].functionCalls.Count) crypto objects`n" -ForegroundColor Green
     
-    # 顯示下一步
-    Write-Host "下一步:" -ForegroundColor Yellow
-    Write-Host "1. 登入 GCM Web UI" -ForegroundColor Gray
-    Write-Host "2. 導航至 Asset Discovery > Import Profiles" -ForegroundColor Gray
-    Write-Host "3. 選擇 'QSE analytics findings report' 或 'QSE discovery findings report'" -ForegroundColor Gray
-    Write-Host "4. 上傳 $OutputPath`n" -ForegroundColor Gray
+    Write-Host "Next steps:" -ForegroundColor Yellow
+    Write-Host "1. Login to GCM Web UI" -ForegroundColor Gray
+    Write-Host "2. Navigate to Asset Discovery > Import Profiles" -ForegroundColor Gray
+    Write-Host "3. Select 'QSE analytics findings report' or 'QSE discovery findings report'" -ForegroundColor Gray
+    Write-Host "4. Upload $OutputPath`n" -ForegroundColor Gray
 }
 catch {
-    Write-Host "`n✗ 錯誤: $_" -ForegroundColor Red
+    Write-Host "`n[ERROR] $_" -ForegroundColor Red
     Write-Host $_.ScriptStackTrace -ForegroundColor Red
     exit 1
 }
